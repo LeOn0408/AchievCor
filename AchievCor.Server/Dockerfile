@@ -10,16 +10,29 @@ EXPOSE 8081
 
 # Этот этап используется для сборки проекта службы
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+# Устанавливаем Node.js для сборки клиента
+RUN apt-get update -y && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get install -y nodejs
+
 ARG BUILD_CONFIGURATION=Release
+
 WORKDIR /src
 COPY ["AchievCor.Server/AchievCor.Server.csproj", "AchievCor.Server/"]
 COPY ["achievcor.client/achievcor.client.esproj", "achievcor.client/"]
 RUN dotnet restore "./AchievCor.Server/AchievCor.Server.csproj"
+
 COPY . .
 
-RUN apt-get update -yq 
 
-WORKDIR "/src/AchievCor.Server"
+WORKDIR /src/achievcor.client
+COPY achievcor.client/package*.json ./achievcor.client/
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+RUN npm run build
+
+
+WORKDIR /src/AchievCor.Server
 RUN dotnet build "./AchievCor.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
