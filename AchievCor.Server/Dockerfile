@@ -16,6 +16,9 @@ COPY ["AchievCor.Server/AchievCor.Server.csproj", "AchievCor.Server/"]
 COPY ["achievcor.client/achievcor.client.esproj", "achievcor.client/"]
 RUN dotnet restore "./AchievCor.Server/AchievCor.Server.csproj"
 COPY . .
+
+RUN apt-get update -yq 
+
 WORKDIR "/src/AchievCor.Server"
 RUN dotnet build "./AchievCor.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 

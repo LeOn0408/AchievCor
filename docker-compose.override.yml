@@ -1,0 +1,15 @@
+services:
+  achievcor.server:
+    environment:
+      - ASPNETCORE_HTTP_PORTS=${ASPNETCORE_HTTP_PORT}
+      - ASPNETCORE_HTTPS_PORTS=${ASPNETCORE_HTTPS_PORT}
+    ports:
+      - "${ASPNETCORE_HTTP_PORT}:${ASPNETCORE_HTTP_PORT}"
+      - "${ASPNETCORE_HTTPS_PORT}:${ASPNETCORE_HTTPS_PORT}"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ./achievcor.client/dist:/app/wwwroot:cached
+  

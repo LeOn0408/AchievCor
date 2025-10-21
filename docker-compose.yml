@@ -1,0 +1,28 @@
+services:
+  achievcor.server:
+    image: ${DOCKER_REGISTRY-}achievcorserver
+    container_name: achievcor-server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+    build:
+      context: .
+      dockerfile: AchievCor.Server/Dockerfile
+    depends_on:
+      - mysql
+      
+  mysql:
+    image: mysql:9.4
+    container_name: achievcor-mysql
+    restart: always
+    ports:
+      - "${MYSQL_PORT}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:
