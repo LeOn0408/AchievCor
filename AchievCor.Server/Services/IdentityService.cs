@@ -1,6 +1,63 @@
-﻿namespace AchievCor.Server.Services
+﻿using AchievCor.Server.Data;
+using AchievCor.Server.Data.Authorization;
+using AchievCor.Server.Data.Entities;
+using AchievCor.Server.Dto;
+using AchievCor.Server.Mappings;
+using AchievCor.Server.Options;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
+namespace AchievCor.Server.Services;
+
+public class IdentityService
 {
-    public class IdentityService
+    private readonly IConfiguration _configuration;
+    private readonly AchievCorDbContext _applicationContext;
+
+    public IdentityService(IConfiguration configuration, AchievCorDbContext applicationContext)
     {
+        _configuration = configuration;
+        _applicationContext = applicationContext;
+    }
+
+    public AuthenticatedUser GetAuthenticatedUser(AuthorizationData authorization)
+    {
+        LocalIdentity? identity = _applicationContext.LocalIdentity.FirstOrDefault(x => x.Login == authorization.Username);
+            
+        if (identity == null || !Password.Verify(authorization.Password, identity.PasswordHash ?? string.Empty))
+        {
+            throw new UnauthorizedAccessException("Invalid username or password");
+        }
+
+
+        UserDto user = _applicationContext.Users
+            .Where(u => u.Id == identity.UserId)
+            .First().ToDto();
+
+        var token = GetJwtToken(user);
+        AuthenticatedUser authenticatedUser = new(user, token);
+
+        return authenticatedUser;
+    }
+
+    private JwtSecurityToken GetJwtToken(UserDto user)
+    {
+        AuthOptions authOptions = new(_configuration);
+        var claims = new List<Claim> {
+                new(ClaimTypes.Name, user.Login),
+                //TODO: Add role
+                //new(ClaimTypes.Role, '')
+            };
+        var jwt = new JwtSecurityToken(
+                issuer: authOptions.Issuer,
+        audience: authOptions.Audience,
+        claims: claims,
+        expires: DateTime.Now.Add(TimeSpan.FromMinutes(15)), // время действия 15 минут
+                signingCredentials: new SigningCredentials(authOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+
+        return jwt;
     }
 }

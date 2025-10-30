@@ -1,4 +1,4 @@
 ﻿namespace AchievCor.Server.Dto
 {
-    public record AuthorizationData(string Username, string HashPass);
+    public record AuthorizationData(string Username, string Password);
 }
