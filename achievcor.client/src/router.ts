@@ -2,8 +2,9 @@ import { createWebHistory, createRouter } from 'vue-router'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import NotFoundView from './views/NotFoundView.vue'
+import { useAuthStore } from './stores'
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes:[
     {
@@ -24,3 +25,19 @@ export default createRouter({
     }
   ]
 })
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  if (!authStore.isInitialized)
+  {
+    await authStore.init()
+  }
+
+  // Если пользователь неавторизован — отправляем на логин
+  if (!authStore.isAuthenticated && to.path !== '/login') {
+    return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  next()
+})
+
+export default router;
