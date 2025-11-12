@@ -6,8 +6,9 @@ namespace AchievCor.Server.Data.Entities
     public class RefreshToken
     {
         public int Id { get; set; }
-        public string? Token { get; set; }
-        public UserEntity? User { get; set; }
+        public string Token { get; set; } = null!;
+        public int LocalIdentityId { get; set; }
+        public LocalIdentity? LocalIdentity { get; set; }
         public DateTime TokenExpiryDate { get; set; }
     }
 }

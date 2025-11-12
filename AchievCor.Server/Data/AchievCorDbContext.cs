@@ -10,6 +10,7 @@ public class AchievCorDbContext : DbContext
     public DbSet<LocalIdentity> LocalIdentity => Set<LocalIdentity>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<RefreshToken> RefreshToken => Set<RefreshToken>();
 
 
     private IConfiguration _configuration;

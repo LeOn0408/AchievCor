@@ -36,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers\Integration\" />
     <Folder Include="Integrations\Bitrix\Services\" />
     <Folder Include="Integrations\Bitrix\Models\" />
   </ItemGroup>

@@ -27,10 +27,11 @@ public class AuthController : Controller
         try
         {
             AuthenticatedUser authenticatedUser = _authenticateService.GetAuthenticatedUser(authorization);
-            if (string.IsNullOrWhiteSpace(authenticatedUser.Token))
-                return BadRequest("Token receipt error");
+            if (!authenticatedUser.IsValid())
+                return BadRequest(new { message = "Invalid credentials" });
 
-            HttpContext.Response.Cookies.Append(".AspCore.Refresh.Token", authenticatedUser.Token,
+
+            HttpContext.Response.Cookies.Append(".AspCore.Refresh.Token", authenticatedUser.RefreshToken.Token,
                 new CookieOptions
                 {
                     HttpOnly = true,
@@ -38,6 +39,7 @@ public class AuthController : Controller
                     SameSite = SameSiteMode.Strict,
                     MaxAge = authenticatedUser.TokenExpiryDate - DateTime.UtcNow
                 });
+
             return Ok(authenticatedUser);
         }
         catch (UnauthorizedAccessException ex)
@@ -51,6 +53,8 @@ public class AuthController : Controller
             return BadRequest(new { message = "Authentication service error" });
         }
     }
+
+    
 
     [Authorize]
     [HttpGet]
@@ -66,5 +70,35 @@ public class AuthController : Controller
             user = userName ?? "Unknown",
             id = userId
         });
+    }
+
+
+    [Route("refresh-token")]
+    [HttpPost]
+    public ActionResult<AuthenticatedUser> AuthenticateByRefreshToken()
+    {
+        var token = HttpContext.Request.Cookies[".AspCore.Refresh.Token"];
+        if (token is null)
+            return Unauthorized(new { message = "Invalid credentials" });
+
+        try
+        {
+            AuthenticatedUser authenticatedUser = _authenticateService.GetAuthenticatedUserByRefreshToken(token);
+            if (authenticatedUser is null || !authenticatedUser.IsValid())
+            {
+                return Unauthorized(new { message = "Invalid credentials" });
+            }
+            HttpContext.Response.Cookies.Append(".AspCore.Refresh.Token", authenticatedUser?.RefreshToken?.Token?.ToString() ?? string.Empty,
+                new CookieOptions
+                {
+                    MaxAge = authenticatedUser?.RefreshToken?.TokenExpiryDate - DateTime.Now
+                });
+            return authenticatedUser;
+
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Authentication service error" });
+        }
     }
 }

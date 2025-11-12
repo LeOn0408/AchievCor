@@ -10,4 +10,5 @@ public class LocalIdentity
     public string? PasswordHash { get; set; }
     public int UserId { get; set; }
     public UserEntity User { get; set; } = null!;  
+    public RefreshToken? RefreshToken { get; set; }
 }
