@@ -1,4 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
+import type { AuthResponseDto } from '../dtos/auth.response.dto';
+import { useAuthStore } from '@/stores'
 
 
 export function createAxios(): AxiosInstance {
@@ -9,7 +11,6 @@ export function createAxios(): AxiosInstance {
     config.headers.Authorization = getAuthHeader();
     return config;
   });
-
   return instance;
 }
 

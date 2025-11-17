@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
-import { createAxios } from '@/services/api';
+import { createAxios } from '@/lib/axios.factory';
 import type { AxiosInstance } from 'axios';
-import type { UserDto } from '@/dtos/user.dto';
+import type { UserInfoDto } from '@/dtos/user.info.dto';
 import router from '@/router';
+import type { AuthResponseDto } from '../dtos/auth.response.dto';
 
 export const useAuthStore = defineStore('auth',
   {
     state: () => {
       return {
-        user: null as UserDto | null,
+        user: null as UserInfoDto | null,
         jwtToken: null as string | null,
         tokenExpiryDate: null as string | null,
         isInitialized: false
@@ -31,13 +32,13 @@ export const useAuthStore = defineStore('auth',
               username,
               password
             });
-            this.user = result.data.user;
-            this.jwtToken = result.data.jwtToken;
-            this.tokenExpiryDate = result.data.tokenExpiryDate;
 
-            localStorage.setItem('user', JSON.stringify(result.data.user));
-            localStorage.setItem('jwtToken', result.data.jwtToken);
-            localStorage.setItem('tokenExpiryDate', result.data.tokenExpiryDate);
+            let authData: AuthResponseDto = {
+              user: result.data.user,
+              jwtToken: result.data.jwtToken,
+              tokenExpiryDate: result.data.tokenExpiryDate
+            }
+            this.setAuthData(authData);
 
             const redirectPath = (router.currentRoute.value.query.redirect as string) || '/'
             router.push(redirectPath)
@@ -48,6 +49,17 @@ export const useAuthStore = defineStore('auth',
           }
         
       },
+
+      setAuthData(authData: AuthResponseDto)
+      {
+        this.user = authData.user
+        this.jwtToken = authData.jwtToken
+        this.tokenExpiryDate = authData.tokenExpiryDate
+        localStorage.setItem('user', JSON.stringify(authData.user))
+        localStorage.setItem('jwtToken', authData.jwtToken)
+        localStorage.setItem('tokenExpiryDate', authData.tokenExpiryDate)
+      },
+
       async init()
       {
         const tokenExpiryDate = localStorage.getItem('tokenExpiryDate');
@@ -62,7 +74,7 @@ export const useAuthStore = defineStore('auth',
         const now = new Date();
 
         if (expiry <= new Date(now.getTime() + 60000)) {
-          this.logout();
+          await this.handleTokenRefresh();
           this.isInitialized = true
           return;
         }
@@ -75,13 +87,34 @@ export const useAuthStore = defineStore('auth',
           this.jwtToken = jwtToken;
           this.tokenExpiryDate = tokenExpiryDate;
         }
-        catch (error)
+        catch (error:any)
         {
-          this.logout();
+          if (error.response?.status === 401) {
+            await this.handleTokenRefresh();
+          } else {
+            await this.logout();
+          }
         }
         finally
         {
           this.isInitialized = true
+        }
+      },
+
+      async handleTokenRefresh() {
+        try {
+          const axiosInstance = createAxios();
+          const response = await axiosInstance.post("/api/auth/refresh-token");
+
+          const authData: AuthResponseDto = {
+            user: response.data.user,
+            tokenExpiryDate: response.data.tokenExpiryDate,
+            jwtToken: response.data.jwtToken
+          };
+
+          this.setAuthData(authData);
+        } catch (refreshError) {
+          await this.logout();
         }
       },
 
